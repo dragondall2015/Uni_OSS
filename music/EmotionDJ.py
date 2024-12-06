@@ -80,7 +80,7 @@ async def recommend_music(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 def main():
    
-    # TOKEN = "토큰키 없음"
+    TOKEN = ""
     
    
     application = Application.builder().token(TOKEN).build()
