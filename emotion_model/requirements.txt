@@ -1,0 +1,9 @@
+torch==1.10.1
+transformers==4.8.1
+gluonnlp==0.10.0
+sentencepiece
+mxnet
+kobert
+pandas
+tqdm
+numpy
