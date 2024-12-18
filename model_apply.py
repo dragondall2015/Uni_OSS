@@ -1,5 +1,8 @@
 # 패키지 임포트
 import torch
+import torch.nn.functional as F
+import sys
+import io
 import os
 import gluonnlp as nlp
 from torch import nn
@@ -33,7 +36,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.cuda.set_per_process_memory_fraction(0.3, device)
 
 # 모델 초기화 및 로드
-model_save_path = "model/kobert_emotion_model.pth"
+model_save_path = "model/hyper2_kobert_emotion_model.pth"
 model = BERTClassifier(bert_model, dr_rate=0.6).to(device)
 
 if not torch.cuda.is_available():
@@ -49,8 +52,8 @@ else:
     raise FileNotFoundError(f"모델 파일이 존재하지 않습니다: {model_save_path}")
 
 # 감정 예측 함수
-def predict_emotion(text, model, tokenizer, device):
-    model.eval()  # 평가 모드로 전환
+def predict_emotion_with_probabilities(text, model, tokenizer, device):
+    model.eval()
     transform = nlp.data.BERTSentenceTransform(
         tokenizer, max_seq_length=64, pad=True, pair=False
     )
@@ -59,9 +62,15 @@ def predict_emotion(text, model, tokenizer, device):
     valid_length = torch.tensor(valid_length).unsqueeze(0).to(device)
     token_type_ids = torch.tensor(token_type_ids).unsqueeze(0).to(device)
     attention_mask = torch.arange(input_ids.size(1)).expand(len(valid_length), input_ids.size(1)).to(device) < valid_length.unsqueeze(1)
+
     with torch.no_grad():
         outputs = model(input_ids, attention_mask, token_type_ids)
-        predicted_class = torch.argmax(outputs, dim=-1).item()
+        probabilities = F.softmax(outputs, dim=-1)
+
+    probabilities = probabilities.squeeze().cpu().numpy()
+    # 숫자 인덱스에 따른 감정 이름 매핑
     label_map = {0: "분노", 1: "행복", 2: "불안", 3: "놀람", 4: "슬픔"}
-    return label_map[predicted_class]
+    emotion_probabilities = {label_map[i]: float(probabilities[i]) for i in range(len(probabilities))}
+    predicted_emotion = max(emotion_probabilities, key=emotion_probabilities.get)
+    return predicted_emotion, emotion_probabilities
 
