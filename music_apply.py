@@ -90,6 +90,7 @@ async def process_emotion_and_recommend(update: Update, context: ContextTypes.DE
     # user_text와 emotion을 context.user_data에 저장
     context.user_data['last_user_input'] = user_input
     context.user_data['last_emotion'] = emotion
+    context.user_data['last_user_emotion_probs'] = emotion_probs
 
     print_emotion_probs = get_print_emotion_probs(emotion_probs)
 
@@ -229,7 +230,8 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             return
             
         emotion = context.user_data.get("last_emotion", None)
-        await process_emotion_and_recommend(update, context, user_input, emotion)
+        emotion_probs = context.user_data.get("last_user_emotion_probs", None)
+        await process_emotion_and_recommend(update, context, user_input, emotion, emotion_probs)
     elif data == "restart":
         chat_id = query.message.chat_id
         await context.bot.send_message(chat_id=chat_id, text="다시 문장을 입력해주세요.")
